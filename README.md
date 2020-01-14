@@ -19,5 +19,5 @@ The package was developed for `CMSSW_9_3_15`, but should work in most versions >
 From `CMSSW_9_3_15/src/SVJAnalyzers/SoftdropAnalyzer`, do:
 
 ```
-cmsRun python/AnalyzeSoftdrop.py inputFiles=/path/to/input/genfile.root
+cmsRun python/AnalyzeSoftdrop.py inputFiles=file:/path/to/input/genfile.root
 ```

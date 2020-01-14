@@ -3,7 +3,8 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 
 options = VarParsing("analysis")
 options.inputFiles = 'file:N4000_0000_seed1001.root'
-options.outputFile = 'flatsoftdorp.root'
+options.outputFile = 'flatsoftdrop.root'
+options.maxEvents = -1
 options.parseArguments()
 
 from Configuration.StandardSequences.Eras import eras
@@ -18,8 +19,7 @@ process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    # input = cms.untracked.int32(-1)
-    input = cms.untracked.int32(50)
+    input = cms.untracked.int32(options.maxEvents)
     )
 
 # Input source
