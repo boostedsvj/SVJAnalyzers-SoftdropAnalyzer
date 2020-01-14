@@ -1,7 +1,12 @@
 import FWCore.ParameterSet.Config as cms
+from FWCore.ParameterSet.VarParsing import VarParsing
+
+options = VarParsing("analysis")
+options.inputFiles = 'file:N4000_0000_seed1001.root'
+options.outputFile = 'flatsoftdorp.root'
+options.parseArguments()
 
 from Configuration.StandardSequences.Eras import eras
-
 process = cms.Process('SoftDropGenJets',eras.Run2_2016)
 
 # import of standard configurations
@@ -11,18 +16,15 @@ process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
 process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
-#added for large scale:
-# process.load("SVJ.Production.SoftDropAnalyzer_cfi")
-# process.load("SVJAnalyzers.SoftdropAnalyzer.TestAnalyzer_cfi")
 
 process.maxEvents = cms.untracked.PSet(
     # input = cms.untracked.int32(-1)
     input = cms.untracked.int32(50)
-)
+    )
 
 # Input source
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring('file:N4000_0000_seed1001.root'),
+    fileNames = cms.untracked.vstring(options.inputFiles),
     secondaryFileNames = cms.untracked.vstring()
     )
 
@@ -32,7 +34,7 @@ process.options = cms.untracked.PSet(
 
 #added for large scale:
 process.TFileService = cms.Service("TFileService",
-    fileName = cms.string("svjjets.root")
+    fileName = cms.string(options.outputFile)
     )
 
 # Other statements
@@ -62,8 +64,7 @@ process.substructurePacks = cms.EDProducer(
         ),
     )
 
-process.someAnalyzer = cms.EDAnalyzer(
-    # "TestAnalyzer",
+process.SoftdropAnalyzer = cms.EDAnalyzer(
     "SoftdropAnalyzer",
     SubstructurePackTag = cms.InputTag("substructurePacks"),
     distMax = cms.double(0.8),
@@ -81,8 +82,7 @@ process.jet_step = cms.Path(
     +
     process.substructurePacks
     +
-    # process.TestAnalyzer
-    process.someAnalyzer
+    process.SoftdropAnalyzer
     )
 process.endjob_step = cms.EndPath(process.endOfProcess)
 

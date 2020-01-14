@@ -48,15 +48,26 @@ class SingleJetProperties {
         SingleJetProperties() {}
         ~SingleJetProperties() {}
 
-        static NjettinessHelper njhelper_;
-        static ECFHelper echelper_;
+        static NjettinessHelper * njhelper_;
+        static ECFHelper * echelper_;
         static bool doNJ_;
         static bool doECF_;
-        static void setHelpers(const edm::ParameterSet& iConfig){
+
+        // static void setHelpers(const edm::ParameterSet& iConfig){
+        //     doNJ_ = true;
+        //     doECF_ = true;
+        //     njhelper_ = new NjettinessHelper(iConfig.getParameter<edm::ParameterSet>("Nsubjettiness"));
+        //     echelper_ = new ECFHelper(iConfig.getParameter<edm::ParameterSet>("ECF"));
+        //     }
+
+        static void setNjettinessHelper(NjettinessHelper * fNjhelper){
+            njhelper_ = fNjhelper;
             doNJ_ = true;
-            njhelper_ = NjettinessHelper(iConfig.getParameter<edm::ParameterSet>("Nsubjettiness"));
+            }
+
+        static void setECFHelper(ECFHelper * fEchelper){
+            echelper_ = fEchelper;
             doECF_ = true;
-            echelper_ = ECFHelper(iConfig.getParameter<edm::ParameterSet>("ECF"));
             }
 
         vector<TLorentzVector> p4_;
@@ -126,12 +137,12 @@ class SingleJetProperties {
             ptD_.push_back( sumPt2 / sumPt );
 
             if (doNJ_){
-                tau1_.push_back( njhelper_.getTau(1, *jet) );
-                tau2_.push_back( njhelper_.getTau(2, *jet) );
-                tau3_.push_back( njhelper_.getTau(3, *jet) );
+                tau1_.push_back( njhelper_->getTau(1, *jet) );
+                tau2_.push_back( njhelper_->getTau(2, *jet) );
+                tau3_.push_back( njhelper_->getTau(3, *jet) );
                 }
             if (doECF_){
-                auto ECFresult = echelper_.getECFs(*jet);
+                auto ECFresult = echelper_->getECFs(*jet);
                 ECF1_.push_back( (ECFresult[0]) );
                 ECF2_.push_back( (ECFresult[1]) );
                 ECF3_.push_back( (ECFresult[2]) );
@@ -158,11 +169,12 @@ class SingleJetProperties {
         int size(){
             return p4_.size();
             }
-
     };
 
 bool SingleJetProperties::doNJ_ = false;
 bool SingleJetProperties::doECF_ = false;
+NjettinessHelper * SingleJetProperties::njhelper_ = NULL;
+ECFHelper * SingleJetProperties::echelper_ = NULL;
 
 
 class SingleParticleProperties {
@@ -310,7 +322,7 @@ class SubstructurePackProperties {
                 summedSDsubjets += TLorentzVector(subjet->px(),subjet->py(),subjet->pz(),subjet->energy());
                 }
             summedSDsubjetmass_.push_back(summedSDsubjets.M());
-            nSubjets_.push_back(subjets_.p4_.size());
+            nSubjets_.push_back(substructurePack->nSubjets());
             }
 
         void setTreeAdresses(TTree* tree, std::string prefix){
@@ -335,7 +347,6 @@ class SoftdropAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources> 
         void beginJob() override;
         void doBeginRun_(const edm::Run&, const edm::EventSetup&) override {}
         void analyze(const edm::Event&, const edm::EventSetup&) override;
-        void analyzeOld(const edm::Event&, const edm::EventSetup&);
         void doEndRun_(const edm::Run&, const edm::EventSetup&) override {}
         void endJob() override {}
 
@@ -353,15 +364,13 @@ class SoftdropAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources> 
         edm::Service<TFileService> fs;
         TTree* tree_;
 
-        //for tree branches
-        NjettinessHelper njhelper;
-        ECFHelper echelper;
-
-        //tokens
         edm::EDGetTokenT<vector<reco::GenMET>> tok_met;
         edm::EDGetTokenT<vector<reco::GenJet>> tok_jet;
         edm::EDGetTokenT<vector<reco::GenParticle>> tok_part;
         edm::EDGetTokenT<vector<SubstructurePack>> tok_substructurepacks;
+
+        NjettinessHelper njhelper_;
+        ECFHelper echelper_;
     };
 
 
@@ -371,15 +380,19 @@ class SoftdropAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources> 
 SoftdropAnalyzer::SoftdropAnalyzer(const edm::ParameterSet& iConfig) : 
     distMax_( iConfig.getParameter<double>("distMax") ),
     tree_(NULL),
-    njhelper(iConfig.getParameter<edm::ParameterSet>("Nsubjettiness")),
-    echelper(iConfig.getParameter<edm::ParameterSet>("ECF")),
     tok_met(consumes<vector<reco::GenMET>>(iConfig.getParameter<edm::InputTag>("METTag"))),
     tok_jet(consumes<vector<reco::GenJet>>(iConfig.getParameter<edm::InputTag>("JetTag"))),
     tok_part(consumes<vector<reco::GenParticle>>(iConfig.getParameter<edm::InputTag>("PartTag"))),
-    tok_substructurepacks(consumes<vector<SubstructurePack>>(iConfig.getParameter<edm::InputTag>("SubstructurePackTag")))
+    tok_substructurepacks(consumes<vector<SubstructurePack>>(iConfig.getParameter<edm::InputTag>("SubstructurePackTag"))),
+    njhelper_(iConfig.getParameter<edm::ParameterSet>("Nsubjettiness")),
+    echelper_(iConfig.getParameter<edm::ParameterSet>("ECF"))
     {
+        // SingleJetProperties::setHelpers(iConfig);
+        SingleJetProperties::setNjettinessHelper(&njhelper_);
+        SingleJetProperties::setECFHelper(&echelper_);
+        // njhelper_ = new NjettinessHelper(iConfig.getParameter<edm::ParameterSet>("Nsubjettiness"));
+        // echelper_ = new ECFHelper(iConfig.getParameter<edm::ParameterSet>("ECF"));
         usesResource("TFileService");
-        SingleJetProperties::setHelpers(iConfig);
         // std::cout << "SoftdropAnalyzer: Warning - Nsubjettiness and ECF variables not available!" << std::endl;
         }
 

@@ -71,16 +71,13 @@ void SubstructureProducer::produce(edm::Event& iEvent, const edm::EventSetup&) {
         // Create a SubstructurePack, a simple collection of associated jets and subjets
         SubstructurePack substructurePack(&genJet);
 
-        // Loop over the substructure collections, and get the actual subjets
+        // Loop over the substructure collections
         for ( auto const & ialgoHandle : algoHandles ) {
-            std::vector< edm::Ptr<reco::GenJet> > subjets;
             for ( auto const & jetFromSubstructureAlgo : *ialgoHandle ) {
                 // Get the jetFromSubstructureAlgo that matches the jet (by looking at a simple deltaR)
                 if ( reco::deltaR( *substructurePack.jet(), jetFromSubstructureAlgo ) < distMax_ ) {
-                    // The daughters of jetFromSubstructureAlgo will be the actual subjets
-                    for ( auto const & subjet : jetFromSubstructureAlgo.daughterPtrVector()) {
-                        substructurePack.addSubjet( edm::Ptr<reco::GenJet>(subjet) ) ;
-                        }
+                    // Add the whole substructure to the substructurePack
+                    substructurePack.addSubstructure(&jetFromSubstructureAlgo);
                     break;
                     }
                 }
