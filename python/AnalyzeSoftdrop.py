@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 from FWCore.ParameterSet.VarParsing import VarParsing
 
 options = VarParsing("analysis")
-options.inputFiles = 'file:N4000_0000_seed1001.root'
+options.inputFiles = 'file:N4000_0000_seed1001.root', 'file:N4000_0001_seed1002.root'
 options.outputFile = 'flatsoftdrop.root'
 options.maxEvents = -1
 options.parseArguments()
@@ -25,7 +25,8 @@ process.maxEvents = cms.untracked.PSet(
 # Input source
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(options.inputFiles),
-    secondaryFileNames = cms.untracked.vstring()
+    secondaryFileNames = cms.untracked.vstring(),
+    duplicateCheckMode = cms.untracked.string('noDuplicateCheck')
     )
 
 process.options = cms.untracked.PSet(
