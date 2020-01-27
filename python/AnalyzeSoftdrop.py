@@ -94,7 +94,7 @@ if not(options.doFatJet):
         )
 
 else:
-    from FatJets_cfi import ak15GenJetsNoNu
+    from SVJAnalyzers.SoftdropAnalyzer.FatJets_cfi import ak15GenJetsNoNu
     process.ak15GenJetsNoNuArea = ak15GenJetsNoNu.clone(
         doAreaFastjet = cms.bool(True),
         )
