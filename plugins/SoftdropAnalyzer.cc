@@ -353,8 +353,9 @@ class SoftdropAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources> 
         float distMax_;
         double MET_ = 0.;
         double METphi_ = 0.;
-        int nGenJetsAK8_ = 0;
+        int nGenJets_ = 0;
         int eventNum_;
+        std::string jetInputTagAsStr_;
 
         SubstructurePackProperties subpacks_;
         SingleParticleProperties hvmesons_;
@@ -387,6 +388,7 @@ SoftdropAnalyzer::SoftdropAnalyzer(const edm::ParameterSet& iConfig) :
     njhelper_(iConfig.getParameter<edm::ParameterSet>("Nsubjettiness")),
     echelper_(iConfig.getParameter<edm::ParameterSet>("ECF"))
     {
+        jetInputTagAsStr_ = iConfig.getParameter<edm::InputTag>("JetTag").label();
         // SingleJetProperties::setHelpers(iConfig);
         SingleJetProperties::setNjettinessHelper(&njhelper_);
         SingleJetProperties::setECFHelper(&echelper_);
@@ -404,8 +406,10 @@ void SoftdropAnalyzer::beginJob() {
     asymm_mt2_lester_bisect::disableCopyrightMessage();
     tree_ = fs->make<TTree>("tree","tree");
     tree_->Branch( "eventNum", &eventNum_ );
-    tree_->Branch( "nGenJetsAK8", &nGenJetsAK8_ );
-    subpacks_.setTreeAdresses(tree_, "GenJetsAK8_");
+    // tree_->Branch( "nGenJetsAK8", &nGenJets_ );
+    // subpacks_.setTreeAdresses(tree_, "GenJetsAK8_");
+    tree_->Branch( ("n" + jetInputTagAsStr_).c_str(), &nGenJets_ );
+    subpacks_.setTreeAdresses(tree_, jetInputTagAsStr_ + "_");
     hvmesons_.setTreeAdresses(tree_, "HVMeson_");
     allDarkParticles_.setTreeAdresses(tree_, "allDarkParticles_");
     metmasscalculations_.setTreeAdresses(tree_, "");
@@ -433,7 +437,7 @@ void SoftdropAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     // Put all jets in the tree (there is exactly one substructurePack per genJet)
     for(const auto& substructurePack : *(h_subsstructurepacks.product())){
         subpacks_.read(&substructurePack);
-        nGenJetsAK8_ = subpacks_.genjet_.size();
+        nGenJets_ = subpacks_.genjet_.size();
         }
 
     // Get all hvmesons, and calculate their summed 4-vector

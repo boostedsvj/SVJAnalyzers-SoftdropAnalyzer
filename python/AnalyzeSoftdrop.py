@@ -5,6 +5,13 @@ options = VarParsing("analysis")
 options.inputFiles = 'file:N4000_0000_seed1001.root', 'file:N4000_0001_seed1002.root'
 options.outputFile = 'flatsoftdrop.root'
 options.maxEvents = -1
+options.register(
+    'doFatJet',
+    False,
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.bool,
+    "do fat jet"
+    )
 options.parseArguments()
 
 from Configuration.StandardSequences.Eras import eras
@@ -38,54 +45,105 @@ process.TFileService = cms.Service("TFileService",
     fileName = cms.string(options.outputFile)
     )
 
-# Other statements
-from RecoJets.Configuration.RecoGenJets_cff import ak8GenJetsNoNu
-process.ak8GenJetsNoNuArea = ak8GenJetsNoNu.clone(
-    doAreaFastjet = cms.bool(True),
-    )
+# ___________________________________
+# Physics
 
-process.ak8GenJetsNoNuSoftDrop = ak8GenJetsNoNu.clone(
-    useSoftDrop = cms.bool(True),
-    zcut = cms.double(0.1),
-    beta = cms.double(0.0),
-    R0   = cms.double(0.5),
-    useExplicitGhosts = cms.bool(True),
-    writeCompound = cms.bool(True),
-    jetCollInstanceName=cms.string("SubJets"),
-    doAreaFastjet = cms.bool(True),
-    )
+if not(options.doFatJet):
 
-process.substructurePacks = cms.EDProducer(
-    "SubstructureProducer",
-    jetSrc = cms.InputTag("ak8GenJetsNoNuArea"),
-    PartTag = cms.InputTag("genParticles"),
-    distMax = cms.double(0.8),
-    algoTags = cms.VInputTag(
-        cms.InputTag("ak8GenJetsNoNuSoftDrop"),
-        ),
-    )
+    from RecoJets.Configuration.RecoGenJets_cff import ak8GenJetsNoNu
+    process.ak8GenJetsNoNuArea = ak8GenJetsNoNu.clone(
+        doAreaFastjet = cms.bool(True),
+        )
 
-process.SoftdropAnalyzer = cms.EDAnalyzer(
-    "SoftdropAnalyzer",
-    SubstructurePackTag = cms.InputTag("substructurePacks"),
-    distMax = cms.double(0.8),
-    )
+    process.ak8GenJetsNoNuSoftDrop = ak8GenJetsNoNu.clone(
+        useSoftDrop = cms.bool(True),
+        zcut = cms.double(0.1),
+        beta = cms.double(0.0),
+        R0   = cms.double(0.5),
+        useExplicitGhosts = cms.bool(True),
+        writeCompound = cms.bool(True),
+        jetCollInstanceName=cms.string("SubJets"),
+        doAreaFastjet = cms.bool(True),
+        )
 
+    process.substructurePacks = cms.EDProducer(
+        "SubstructureProducer",
+        jetSrc = cms.InputTag("ak8GenJetsNoNuArea"),
+        PartTag = cms.InputTag("genParticles"),
+        distMax = cms.double(0.8),
+        algoTags = cms.VInputTag(
+            cms.InputTag("ak8GenJetsNoNuSoftDrop"),
+            ),
+        )
+
+    process.SoftdropAnalyzer = cms.EDAnalyzer(
+        "SoftdropAnalyzer",
+        SubstructurePackTag = cms.InputTag("substructurePacks"),
+        distMax = cms.double(0.8),
+        )
+
+    # Path and EndPath definitions
+    process.jet_step = cms.Path(
+        process.ak8GenJetsNoNuArea
+        +
+        process.ak8GenJetsNoNuSoftDrop
+        +
+        process.substructurePacks
+        +
+        process.SoftdropAnalyzer
+        )
+
+else:
+    from FatJets_cfi import ak15GenJetsNoNu
+    process.ak15GenJetsNoNuArea = ak15GenJetsNoNu.clone(
+        doAreaFastjet = cms.bool(True),
+        )
+
+    process.ak15GenJetsNoNuSoftDrop = ak15GenJetsNoNu.clone(
+        useSoftDrop = cms.bool(True),
+        zcut = cms.double(0.1),
+        beta = cms.double(0.0),
+        R0   = cms.double(0.5),
+        useExplicitGhosts = cms.bool(True),
+        writeCompound = cms.bool(True),
+        jetCollInstanceName=cms.string("SubJets"),
+        doAreaFastjet = cms.bool(True),
+        )
+
+    process.substructurePacks = cms.EDProducer(
+        "SubstructureProducer",
+        jetSrc = cms.InputTag("ak15GenJetsNoNuArea"),
+        PartTag = cms.InputTag("genParticles"),
+        distMax = cms.double(0.8),
+        algoTags = cms.VInputTag(
+            cms.InputTag("ak15GenJetsNoNuSoftDrop"),
+            ),
+        )
+
+    process.SoftdropAnalyzer = cms.EDAnalyzer(
+        "SoftdropAnalyzer",
+        JetTag = cms.InputTag('ak15GenJetsNoNu'),
+        SubstructurePackTag = cms.InputTag("substructurePacks"),
+        distMax = cms.double(0.8),
+        )
+
+    # Path and EndPath definitions
+    process.jet_step = cms.Path(
+        process.ak15GenJetsNoNuArea
+        +
+        process.ak15GenJetsNoNuSoftDrop
+        +
+        process.substructurePacks
+        +
+        process.SoftdropAnalyzer
+        )
+
+
+
+process.endjob_step = cms.EndPath(process.endOfProcess)
 
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, '80X_mcRun2_asymptotic_2016_TrancheIV_v6', '')
-
-# Path and EndPath definitions
-process.jet_step = cms.Path(
-    process.ak8GenJetsNoNuArea
-    +
-    process.ak8GenJetsNoNuSoftDrop
-    +
-    process.substructurePacks
-    +
-    process.SoftdropAnalyzer
-    )
-process.endjob_step = cms.EndPath(process.endOfProcess)
 
 # Schedule definition
 process.schedule = cms.Schedule(process.jet_step)
