@@ -291,6 +291,42 @@ class SVJSystemProperties {
     };
 
 
+class TransverseMassProperty {
+    public:
+        TransverseMassProperty() {}
+        ~TransverseMassProperty() {}
+
+        vector<double> transverseMass_;
+
+        void read(
+            TLorentzVector * jet,
+            TLorentzVector * met
+            ){
+            double Ejet = std::sqrt(
+                std::pow(jet->Px(),2) + std::pow(jet->Py(),2) + std::pow(jet->M(),2)
+                );
+            double Emet = std::sqrt(
+                std::pow(met->Px(),2) + std::pow(met->Py(),2) // Assume 0 mass for met
+                );
+            double MTsq =
+                  std::pow( Ejet + Emet , 2 )
+                - std::pow( jet->Px() + met->Px(), 2 )
+                - std::pow( jet->Py() + met->Py(), 2 )
+                ;
+            transverseMass_.push_back( std::sqrt( std::max(MTsq, 0.0) ) );
+            // double TransverseMass(double px1, double py1, double m1, double px2, double py2, double m2){
+            //     double E1 = sqrt(pow(px1,2)+pow(py1,2)+pow(m1,2));
+            //     double E2 = sqrt(pow(px2,2)+pow(py2,2)+pow(m2,2));
+            //     double MTsq = pow(E1+E2,2)-pow(px1+px2,2)-pow(py1+py2,2);
+            //     return sqrt(max(MTsq,0.0));
+            }
+
+        void setTreeAdresses(TTree* tree, std::string prefix){
+            tree->Branch((prefix + std::string("transMass")).c_str(), &transverseMass_);
+            }
+    };
+
+
 class SubstructurePackProperties {
     public:
         SubstructurePackProperties() {}
@@ -301,7 +337,11 @@ class SubstructurePackProperties {
         SingleParticleProperties zprime_;
         SingleJetProperties subjets_;
         vector<int> nSubjets_;
-        vector<double> summedSDsubjetmass_;
+        // vector<double> summedSDsubjetmass_;
+        vector<TLorentzVector> summedSDsubjets_;
+
+        TransverseMassProperty transMass_genJetWithMet_;
+        TransverseMassProperty transMass_SDJetWithMet_;
 
         void read(const SubstructurePack * substructurePack){
             // Put the GenJetAK8 in the tree
@@ -321,17 +361,30 @@ class SubstructurePackProperties {
                 subjets_.read<edm::Ptr<reco::GenJet>>(subjet);
                 summedSDsubjets += TLorentzVector(subjet->px(),subjet->py(),subjet->pz(),subjet->energy());
                 }
-            summedSDsubjetmass_.push_back(summedSDsubjets.M());
+            summedSDsubjets_.push_back(summedSDsubjets);
+            // summedSDsubjetmass_.push_back(summedSDsubjets.M());
             nSubjets_.push_back(substructurePack->nSubjets());
+            }
+
+        void readTransverseMasses(TLorentzVector * met){
+            for(auto genjet : genjet_.p4_) {
+                transMass_genJetWithMet_.read(&genjet, met);
+                }
+            for(auto sdjet : summedSDsubjets_) {
+                transMass_SDJetWithMet_.read(&sdjet, met);
+                }
             }
 
         void setTreeAdresses(TTree* tree, std::string prefix){
             genjet_.setTreeAdresses(tree, prefix);
             tree->Branch((prefix + std::string("nSDsubjets")).c_str(), "vector<int>", &nSubjets_, 32000, 0);
             subjets_.setTreeAdresses(tree, prefix + std::string("SDsubjets_"));
-            tree->Branch((prefix + std::string("summedSDsubjetmass")).c_str(), "vector<double>", &summedSDsubjetmass_, 32000, 0);
+            tree->Branch((prefix + std::string("summedSDsubjets")).c_str(), "vector<TLorentzVector>", &summedSDsubjets_, 32000, 0);
+            // tree->Branch((prefix + std::string("summedSDsubjetmass")).c_str(), "vector<double>", &summedSDsubjetmass_, 32000, 0);
             tree->Branch((prefix + std::string("hasZprime")).c_str(), "vector<bool>", &hasZprime_, 32000, 0);
             zprime_.setTreeAdresses(tree, prefix + std::string("zprime_"));
+            transMass_genJetWithMet_.setTreeAdresses(tree, prefix + std::string("genJetWithMet_"));
+            transMass_SDJetWithMet_.setTreeAdresses(tree, prefix + std::string("SDJetWithMet_"));
             }
     };
 
@@ -429,6 +482,13 @@ void SoftdropAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     edm::Handle<vector<SubstructurePack>> h_subsstructurepacks;
     iEvent.getByToken(tok_substructurepacks, h_subsstructurepacks);
 
+    // Get the MET
+    const auto& met = h_met->front();
+    MET_ = met.pt();
+    METphi_ = met.phi();
+    TLorentzVector met_p4(met.px(), met.py(), met.pz(), met.energy());
+
+    // Open properties to be put in the tree
     subpacks_ = SubstructurePackProperties();
     hvmesons_ = SingleParticleProperties();
     allDarkParticles_ = SingleParticleProperties();
@@ -437,6 +497,7 @@ void SoftdropAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     // Put all jets in the tree (there is exactly one substructurePack per genJet)
     for(const auto& substructurePack : *(h_subsstructurepacks.product())){
         subpacks_.read(&substructurePack);
+        subpacks_.readTransverseMasses(&met_p4);
         nGenJets_ = subpacks_.genjet_.size();
         }
 
@@ -453,14 +514,8 @@ void SoftdropAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& 
             }
         }
 
-    // Get the MET
-    const auto& met = h_met->front();
-    MET_ = met.pt();
-    METphi_ = met.phi();
-
     // Calculate variables that are only available if there are at least two genJets
     if( subpacks_.genjet_.size() >= 2 ){
-        TLorentzVector met_p4(met.px(), met.py(), met.pz(), met.energy());
         metmasscalculations_.read(
             &(subpacks_.genjet_.p4_[0]),
             &(subpacks_.genjet_.p4_[1]),
