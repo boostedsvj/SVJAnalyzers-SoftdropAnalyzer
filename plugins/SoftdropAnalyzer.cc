@@ -134,7 +134,7 @@ class SingleJetProperties {
             momentGirth_.push_back( momentGirth / jet->pt() );
             momentHalf_.push_back( momentHalf / jet->pt() );
             multiplicity_.push_back( jet->numberOfDaughters() );
-            ptD_.push_back( sumPt2 / sumPt );
+            ptD_.push_back( std::sqrt(sumPt2) / sumPt );
 
             if (doNJ_){
                 tau1_.push_back( njhelper_->getTau(1, *jet) );
