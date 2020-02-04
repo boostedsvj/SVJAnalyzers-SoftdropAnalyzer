@@ -10,6 +10,7 @@
 <use name="DataFormats/HepMCCandidate"/>
 <use name="DataFormats/Math"/>
 <use name="DataFormats/Common"/>
+<use name="SimDataFormats/GeneratorProducts"/>
 <use name="root"/>
 <use name="rootmath"/>
 <use name="fastjet"/>

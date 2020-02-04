@@ -53,13 +53,6 @@ class SingleJetProperties {
         static bool doNJ_;
         static bool doECF_;
 
-        // static void setHelpers(const edm::ParameterSet& iConfig){
-        //     doNJ_ = true;
-        //     doECF_ = true;
-        //     njhelper_ = new NjettinessHelper(iConfig.getParameter<edm::ParameterSet>("Nsubjettiness"));
-        //     echelper_ = new ECFHelper(iConfig.getParameter<edm::ParameterSet>("ECF"));
-        //     }
-
         static void setNjettinessHelper(NjettinessHelper * fNjhelper){
             njhelper_ = fNjhelper;
             doNJ_ = true;
@@ -314,11 +307,6 @@ class TransverseMassProperty {
                 - std::pow( jet->Py() + met->Py(), 2 )
                 ;
             transverseMass_.push_back( std::sqrt( std::max(MTsq, 0.0) ) );
-            // double TransverseMass(double px1, double py1, double m1, double px2, double py2, double m2){
-            //     double E1 = sqrt(pow(px1,2)+pow(py1,2)+pow(m1,2));
-            //     double E2 = sqrt(pow(px2,2)+pow(py2,2)+pow(m2,2));
-            //     double MTsq = pow(E1+E2,2)-pow(px1+px2,2)-pow(py1+py2,2);
-            //     return sqrt(max(MTsq,0.0));
             }
 
         void setTreeAdresses(TTree* tree, std::string prefix){
@@ -409,6 +397,7 @@ class SoftdropAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources> 
         int nGenJets_ = 0;
         int eventNum_;
         std::string jetInputTagAsStr_;
+        double ht_;
 
         SubstructurePackProperties subpacks_;
         SingleParticleProperties hvmesons_;
@@ -422,6 +411,7 @@ class SoftdropAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources> 
         edm::EDGetTokenT<vector<reco::GenJet>> tok_jet;
         edm::EDGetTokenT<vector<reco::GenParticle>> tok_part;
         edm::EDGetTokenT<vector<SubstructurePack>> tok_substructurepacks;
+        edm::EDGetTokenT<double> tok_ht;
 
         NjettinessHelper njhelper_;
         ECFHelper echelper_;
@@ -438,6 +428,7 @@ SoftdropAnalyzer::SoftdropAnalyzer(const edm::ParameterSet& iConfig) :
     tok_jet(consumes<vector<reco::GenJet>>(iConfig.getParameter<edm::InputTag>("JetTag"))),
     tok_part(consumes<vector<reco::GenParticle>>(iConfig.getParameter<edm::InputTag>("PartTag"))),
     tok_substructurepacks(consumes<vector<SubstructurePack>>(iConfig.getParameter<edm::InputTag>("SubstructurePackTag"))),
+    tok_ht(consumes<double>(iConfig.getParameter<edm::InputTag>("HTTag"))),
     njhelper_(iConfig.getParameter<edm::ParameterSet>("Nsubjettiness")),
     echelper_(iConfig.getParameter<edm::ParameterSet>("ECF"))
     {
@@ -468,6 +459,7 @@ void SoftdropAnalyzer::beginJob() {
     metmasscalculations_.setTreeAdresses(tree_, "");
     tree_->Branch( "MET", &MET_ );
     tree_->Branch( "METphi", &METphi_ );
+    tree_->Branch( "HT", &ht_ );
     }
 
 
@@ -481,6 +473,11 @@ void SoftdropAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     iEvent.getByToken(tok_part,h_part);
     edm::Handle<vector<SubstructurePack>> h_subsstructurepacks;
     iEvent.getByToken(tok_substructurepacks, h_subsstructurepacks);
+
+    // Get HT
+    edm::Handle<double> h_ht;
+    iEvent.getByToken(tok_ht, h_ht);
+    ht_ = *h_ht;
 
     // Get the MET
     const auto& met = h_met->front();
@@ -533,6 +530,7 @@ void SoftdropAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& 
 void SoftdropAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     edm::ParameterSetDescription desc;
     desc.add<edm::InputTag>("METTag",edm::InputTag("genMetTrue"));
+    desc.add<edm::InputTag>("HTTag", edm::InputTag("htProducer", "genHT"));
     desc.add<edm::InputTag>("JetTag",edm::InputTag("ak8GenJetsNoNu"));
     desc.add<edm::InputTag>("PartTag",edm::InputTag("genParticles"));
     desc.add<edm::InputTag>("SubstructurePackTag", edm::InputTag("packedGenJetsAK8NoNu")); 

@@ -82,6 +82,8 @@ process.genJetsNoNuSoftDrop = genJetsNoNu.clone(
     doAreaFastjet = cms.bool(True),
     )
 
+process.htProducer = cms.EDProducer("GenHTProducer")
+
 process.substructurePacks = cms.EDProducer(
     "SubstructureProducer",
     jetSrc = cms.InputTag("genJetsNoNuArea"),
@@ -94,6 +96,7 @@ process.substructurePacks = cms.EDProducer(
 
 process.SoftdropAnalyzer = cms.EDAnalyzer(
     "SoftdropAnalyzer",
+    HTTag = cms.InputTag('htProducer', 'genHT'),
     JetTag = cms.InputTag('genJetsNoNu'),
     SubstructurePackTag = cms.InputTag("substructurePacks"),
     distMax = cms.double(0.8),
@@ -104,6 +107,8 @@ process.jet_step = cms.Path(
     process.genJetsNoNuArea
     +
     process.genJetsNoNuSoftDrop
+    +
+    process.htProducer
     +
     process.substructurePacks
     +
