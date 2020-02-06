@@ -350,7 +350,6 @@ class SubstructurePackProperties {
                 summedSDsubjets += TLorentzVector(subjet->px(),subjet->py(),subjet->pz(),subjet->energy());
                 }
             summedSDsubjets_.push_back(summedSDsubjets);
-            // summedSDsubjetmass_.push_back(summedSDsubjets.M());
             nSubjets_.push_back(substructurePack->nSubjets());
             }
 
@@ -368,7 +367,6 @@ class SubstructurePackProperties {
             tree->Branch((prefix + std::string("nSDsubjets")).c_str(), "vector<int>", &nSubjets_, 32000, 0);
             subjets_.setTreeAdresses(tree, prefix + std::string("SDsubjets_"));
             tree->Branch((prefix + std::string("summedSDsubjets")).c_str(), "vector<TLorentzVector>", &summedSDsubjets_, 32000, 0);
-            // tree->Branch((prefix + std::string("summedSDsubjetmass")).c_str(), "vector<double>", &summedSDsubjetmass_, 32000, 0);
             tree->Branch((prefix + std::string("hasZprime")).c_str(), "vector<bool>", &hasZprime_, 32000, 0);
             zprime_.setTreeAdresses(tree, prefix + std::string("zprime_"));
             transMass_genJetWithMet_.setTreeAdresses(tree, prefix + std::string("genJetWithMet_"));
@@ -433,13 +431,9 @@ SoftdropAnalyzer::SoftdropAnalyzer(const edm::ParameterSet& iConfig) :
     echelper_(iConfig.getParameter<edm::ParameterSet>("ECF"))
     {
         jetInputTagAsStr_ = iConfig.getParameter<edm::InputTag>("JetTag").label();
-        // SingleJetProperties::setHelpers(iConfig);
         SingleJetProperties::setNjettinessHelper(&njhelper_);
         SingleJetProperties::setECFHelper(&echelper_);
-        // njhelper_ = new NjettinessHelper(iConfig.getParameter<edm::ParameterSet>("Nsubjettiness"));
-        // echelper_ = new ECFHelper(iConfig.getParameter<edm::ParameterSet>("ECF"));
         usesResource("TFileService");
-        // std::cout << "SoftdropAnalyzer: Warning - Nsubjettiness and ECF variables not available!" << std::endl;
         }
 
 
@@ -450,8 +444,6 @@ void SoftdropAnalyzer::beginJob() {
     asymm_mt2_lester_bisect::disableCopyrightMessage();
     tree_ = fs->make<TTree>("tree","tree");
     tree_->Branch( "eventNum", &eventNum_ );
-    // tree_->Branch( "nGenJetsAK8", &nGenJets_ );
-    // subpacks_.setTreeAdresses(tree_, "GenJetsAK8_");
     tree_->Branch( ("n" + jetInputTagAsStr_).c_str(), &nGenJets_ );
     subpacks_.setTreeAdresses(tree_, jetInputTagAsStr_ + "_");
     hvmesons_.setTreeAdresses(tree_, "HVMeson_");
