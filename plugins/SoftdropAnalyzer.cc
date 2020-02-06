@@ -178,7 +178,8 @@ class SingleParticleProperties {
         vector<TLorentzVector> p4_;
         vector<int> pdgId_;
 
-        void read(const reco::GenParticle * particle){
+        template <class GenParticlePtr = const reco::GenParticle *>
+        void read(GenParticlePtr particle){
             p4_.push_back(
                 TLorentzVector(
                     particle->px(),
@@ -333,12 +334,15 @@ class SubstructurePackProperties {
 
         void read(const SubstructurePack * substructurePack){
             // Put the GenJetAK8 in the tree
-            genjet_.read<const reco::GenJet *>(substructurePack->jet());
+            // genjet_.read<const reco::GenJet *>(substructurePack->jet());
+            genjet_.read(substructurePack->jet());
 
             // Note in tree whether the GenJetAK8 was matched to GenParticle Zprime,
             // and if so save the Zprime
             bool hasZprime = substructurePack->hasZprime();
             if (hasZprime){
+                // reco::GenParticle zprime = substructurePack->zprime();
+                // zprime_.read(&zprime);
                 zprime_.read(substructurePack->zprime());
                 }
             hasZprime_.push_back(hasZprime);

@@ -3,14 +3,14 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 
 options = VarParsing("analysis")
 options.inputFiles = 'file:N4000_0000_seed1001.root', 'file:N4000_0001_seed1002.root'
-options.outputFile = 'flatsoftdrop.root'
+options.outputFile = 'substructurepacks.root'
 options.maxEvents = -1
 options.register(
     'coneSize',
     0.8,
     VarParsing.multiplicity.singleton,
     VarParsing.varType.float,
-    "do fat jet"
+    "Cone size with which to cluster the genJets"
     )
 options.parseArguments()
 
@@ -24,6 +24,7 @@ process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
 process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
+process.load('Configuration.EventContent.EventContent_cff')
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(options.maxEvents)
@@ -38,11 +39,6 @@ process.source = cms.Source("PoolSource",
 
 process.options = cms.untracked.PSet(
     SkipEvent = cms.untracked.vstring('ProductNotFound')
-    )
-
-#added for large scale:
-process.TFileService = cms.Service("TFileService",
-    fileName = cms.string(options.outputFile)
     )
 
 # ___________________________________
@@ -94,13 +90,23 @@ process.substructurePacks = cms.EDProducer(
         ),
     )
 
-process.SoftdropAnalyzer = cms.EDAnalyzer(
-    "SoftdropAnalyzer",
-    HTTag = cms.InputTag('htProducer', 'genHT'),
-    JetTag = cms.InputTag('genJetsNoNu'),
-    SubstructurePackTag = cms.InputTag("substructurePacks"),
-    distMax = cms.double(0.8),
+# Output definition
+process.FEVTDEBUGoutput = cms.OutputModule("PoolOutputModule",
+    dataset = cms.untracked.PSet(
+        dataTier = cms.untracked.string('GEN-SIM'),
+        filterName = cms.untracked.string('')
+        ),
+    fileName = cms.untracked.string(options.outputFile),
+    outputCommands = process.FEVTDEBUGEventContent.outputCommands,
+    splitLevel = cms.untracked.int32(0)
     )
+
+process.FEVTDEBUGoutput.outputCommands.extend([
+    'drop *',
+    'keep *_substructurePacks_*_*',
+    'keep *_genParticles_*_*',
+    'keep *_htProducer_*_*'
+    ])
 
 # Path and EndPath definitions
 process.jet_step = cms.Path(
@@ -111,19 +117,18 @@ process.jet_step = cms.Path(
     process.htProducer
     +
     process.substructurePacks
-    +
-    process.SoftdropAnalyzer
     )
 
 process.endjob_step = cms.EndPath(process.endOfProcess)
+process.FEVTDEBUGoutput_step = cms.EndPath(process.FEVTDEBUGoutput)
 
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, '80X_mcRun2_asymptotic_2016_TrancheIV_v6', '')
 
 # Schedule definition
 process.schedule = cms.Schedule(process.jet_step)
-process.schedule.extend([process.endjob_step])
+process.schedule.extend([process.endjob_step, process.FEVTDEBUGoutput_step])
 
 # #Setup FWK for multithreaded
-# process.options.numberOfThreads=cms.untracked.uint32(4)
-# process.options.numberOfStreams=cms.untracked.uint32(0)
+process.options.numberOfThreads=cms.untracked.uint32(4)
+process.options.numberOfStreams=cms.untracked.uint32(0)
