@@ -105,6 +105,7 @@ process.FEVTDEBUGoutput.outputCommands.extend([
     'drop *',
     'keep *_substructurePacks_*_*',
     'keep *_genParticles_*_*',
+    'keep *_genParticlesForJetsNoNu_*_*',
     'keep *_htProducer_*_*'
     ])
 
