@@ -63,6 +63,11 @@ else:
     recoAllGenJets     += genJets
     recoAllGenJetsNoNu += genJets
 
+process.saveGenParticlesForJetsNoNu = cms.EDProducer(
+    'DumpGenParticlesForJetsNoNu',
+    PartTag = cms.InputTag('genParticlesForJetsNoNu')
+    )
+
 process.genJetsNoNuArea = genJetsNoNu.clone(
     doAreaFastjet = cms.bool(True),
     )
@@ -105,12 +110,15 @@ process.FEVTDEBUGoutput.outputCommands.extend([
     'drop *',
     'keep *_substructurePacks_*_*',
     'keep *_genParticles_*_*',
-    'keep *_genParticlesForJetsNoNu_*_*',
+    'keep *_saveGenParticlesForJetsNoNu_*_*',
+    # 'keep *_genParticlesForJetsNoNu_*_*',
     'keep *_htProducer_*_*'
     ])
 
 # Path and EndPath definitions
 process.jet_step = cms.Path(
+    process.saveGenParticlesForJetsNoNu
+    +
     process.genJetsNoNuArea
     +
     process.genJetsNoNuSoftDrop
