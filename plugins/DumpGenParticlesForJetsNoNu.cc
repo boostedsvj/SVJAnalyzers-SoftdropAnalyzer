@@ -24,17 +24,14 @@ class DumpGenParticlesForJetsNoNu : public edm::stream::EDProducer<> {
         explicit DumpGenParticlesForJetsNoNu(const edm::ParameterSet&);
         ~DumpGenParticlesForJetsNoNu() {}
         typedef edm::View<reco::Candidate> CandidateView;
-        // typedef edm::View<reco::GenParticle> GenParticleView;
         typedef std::vector<reco::GenParticle> GenParticleVector;
 
     private:
         virtual void produce(edm::Event&, const edm::EventSetup&) override;
-        // edm::EDGetTokenT<GenParticleView> inputParticleToken_;
         edm::EDGetTokenT<CandidateView> inputParticleToken_;
     };
 
 DumpGenParticlesForJetsNoNu::DumpGenParticlesForJetsNoNu(const edm::ParameterSet& iConfig) :
-    // inputParticleToken_(consumes<GenParticleView>(iConfig.getParameter<edm::InputTag>("PartTag")))
     inputParticleToken_(consumes<CandidateView>(iConfig.getParameter<edm::InputTag>("PartTag")))
     {
     produces<GenParticleVector>();
@@ -42,13 +39,10 @@ DumpGenParticlesForJetsNoNu::DumpGenParticlesForJetsNoNu(const edm::ParameterSet
 
 void DumpGenParticlesForJetsNoNu::produce(edm::Event& iEvent, const edm::EventSetup&) {  
     std::unique_ptr<GenParticleVector> outputGenParticles(new GenParticleVector);
-
-    // edm::Handle<GenParticleView> inputParticleHandle;
     edm::Handle<CandidateView> inputParticleHandle;
     iEvent.getByToken(inputParticleToken_, inputParticleHandle);
 
     for (auto const & candidate : inputParticleHandle->ptrs()){
-        std::cout << typeid(candidate).name() << std::endl;
         reco::GenParticle particle(
             candidate->charge(), candidate->p4(), candidate->vertex(),
             candidate->pdgId(), candidate->status(), candidate->charge()
