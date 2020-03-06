@@ -68,6 +68,12 @@ process.saveGenParticlesForJetsNoNu = cms.EDProducer(
     PartTag = cms.InputTag('genParticlesForJetsNoNu')
     )
 
+process.saveGenParticlesForJetsNoNuOnlyZPrime = cms.EDProducer(
+    'DumpGenParticlesForJetsNoNu',
+    PartTag = cms.InputTag('genParticlesForJetsNoNu'),
+    onlyFromZPrime = cms.bool(True)
+    )
+
 process.genJetsNoNuArea = genJetsNoNu.clone(
     doAreaFastjet = cms.bool(True),
     )
@@ -111,6 +117,7 @@ process.FEVTDEBUGoutput.outputCommands.extend([
     'keep *_substructurePacks_*_*',
     'keep *_genParticles_*_*',
     'keep *_saveGenParticlesForJetsNoNu_*_*',
+    'keep *_saveGenParticlesForJetsNoNuOnlyZPrime_*_*',
     # 'keep *_genParticlesForJetsNoNu_*_*',
     'keep *_htProducer_*_*'
     ])
@@ -118,6 +125,8 @@ process.FEVTDEBUGoutput.outputCommands.extend([
 # Path and EndPath definitions
 process.jet_step = cms.Path(
     process.saveGenParticlesForJetsNoNu
+    +
+    process.saveGenParticlesForJetsNoNuOnlyZPrime
     +
     process.genJetsNoNuArea
     +
