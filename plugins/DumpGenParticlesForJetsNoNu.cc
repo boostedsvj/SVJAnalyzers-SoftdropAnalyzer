@@ -1,5 +1,6 @@
 #include <memory>
 #include <vector>
+#include <string>
 #include <cstdlib>
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/stream/EDProducer.h"
@@ -30,11 +31,13 @@ class DumpGenParticlesForJetsNoNu : public edm::stream::EDProducer<> {
         virtual void produce(edm::Event&, const edm::EventSetup&) override;
         edm::EDGetTokenT<CandidateView> inputParticleToken_;
         bool onlyFromZPrime_;
+        bool verbose_;
     };
 
 DumpGenParticlesForJetsNoNu::DumpGenParticlesForJetsNoNu(const edm::ParameterSet& iConfig) :
     inputParticleToken_(consumes<CandidateView>(iConfig.getParameter<edm::InputTag>("PartTag"))),
-    onlyFromZPrime_(iConfig.getParameter<bool>("onlyFromZPrime"))
+    onlyFromZPrime_(iConfig.getParameter<bool>("onlyFromZPrime")),
+    verbose_(iConfig.getParameter<bool>("verbose"))
     {
     produces<GenParticleVector>();
     }
@@ -45,6 +48,24 @@ void DumpGenParticlesForJetsNoNu::produce(edm::Event& iEvent, const edm::EventSe
     iEvent.getByToken(inputParticleToken_, inputParticleHandle);
 
     for (auto const & candidate : inputParticleHandle->ptrs()){
+        // Print the lineage up to 4900023
+        if (verbose_){
+            std::string lineage = "";
+            if (candidate->numberOfMothers() > 0){
+                const reco::Candidate * mother = candidate->mother();
+                lineage += std::to_string(candidate->pdgId()) + " -> " + std::to_string(mother->pdgId()) ;
+                while (mother->numberOfMothers() > 0){
+                    if (mother->pdgId() == 4900023){ break; }
+                    mother = mother->mother();
+                    lineage += " -> " + std::to_string(mother->pdgId()) ;
+                    }
+                edm::LogError("Dumper") << "Lineage: " << lineage ;
+                }
+            else {
+                edm::LogError("Dumper") << "Candidate has no mothers at all";
+                }
+            }
+        // Put particles in the list to save
         if (onlyFromZPrime_){
             if (candidate->numberOfMothers() > 0){
                 const reco::Candidate * mother = candidate->mother();
@@ -78,7 +99,8 @@ void DumpGenParticlesForJetsNoNu::produce(edm::Event& iEvent, const edm::EventSe
 void DumpGenParticlesForJetsNoNu::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     edm::ParameterSetDescription desc;
     desc.add<edm::InputTag>("PartTag", edm::InputTag("genParticlesForJets"));
-    desc.add<bool>("onlyFromZPrime", false);    
+    desc.add<bool>("onlyFromZPrime", false);
+    desc.add<bool>("verbose", false);
     descriptions.add("DumpGenParticlesForJetsNoNu", desc);
     }
 

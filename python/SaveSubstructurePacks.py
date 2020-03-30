@@ -67,12 +67,43 @@ process.saveGenParticlesForJetsNoNu = cms.EDProducer(
     'DumpGenParticlesForJetsNoNu',
     PartTag = cms.InputTag('genParticlesForJetsNoNu')
     )
-
 process.saveGenParticlesForJetsNoNuOnlyZPrime = cms.EDProducer(
     'DumpGenParticlesForJetsNoNu',
     PartTag = cms.InputTag('genParticlesForJetsNoNu'),
     onlyFromZPrime = cms.bool(True)
     )
+
+process.saveGenParticlesForMETAllVisible = cms.EDProducer(
+    'DumpGenParticlesForJetsNoNu',
+    PartTag = cms.InputTag('genParticlesForMETAllVisible')
+    )
+process.saveGenParticlesForMETAllVisibleOnlyZPrime = cms.EDProducer(
+    'DumpGenParticlesForJetsNoNu',
+    PartTag = cms.InputTag('genParticlesForMETAllVisible'),
+    onlyFromZPrime = cms.bool(True),
+    # verbose = cms.bool(True)
+    )
+
+process.saveGenCandidatesForMET = cms.EDProducer(
+    'DumpGenParticlesForJetsNoNu',
+    PartTag = cms.InputTag('genCandidatesForMET')
+    )
+process.saveGenCandidatesForMETOnlyZPrime = cms.EDProducer(
+    'DumpGenParticlesForJetsNoNu',
+    PartTag = cms.InputTag('genCandidatesForMET'),
+    onlyFromZPrime = cms.bool(True),
+    # verbose = cms.bool(True)
+    )
+
+# process.DMGenParticles = cms.EDProducer(
+#     "GenParticlePruner",
+#     src = cms.InputTag("genParticles"),
+#     select = cms.vstring(
+#         "drop  *", # this is the default
+#         '++keep abs(pdgId) == 51 || abs(pdgId) == 52 || abs(pdgId) == 53'
+#         )
+#     )
+process.DMGenParticles = cms.EDProducer("DumpDMParticles")
 
 process.genJetsNoNuArea = genJetsNoNu.clone(
     doAreaFastjet = cms.bool(True),
@@ -116,23 +147,29 @@ process.FEVTDEBUGoutput.outputCommands.extend([
     'drop *',
     'keep *_substructurePacks_*_*',
     'keep *_genParticles_*_*',
-    'keep *_saveGenParticlesForJetsNoNu_*_*',
-    'keep *_saveGenParticlesForJetsNoNuOnlyZPrime_*_*',
     # 'keep *_genParticlesForJetsNoNu_*_*',
-    'keep *_htProducer_*_*'
+    'keep *_saveGenParticlesForJetsNoNu_*_*', 'keep *_saveGenParticlesForJetsNoNuOnlyZPrime_*_*',
+    'keep *_saveGenParticlesForMETAllVisible_*_*', 'keep *_saveGenParticlesForMETAllVisibleOnlyZPrime_*_*',
+    'keep *_saveGenCandidatesForMET_*_*', 'keep *_saveGenCandidatesForMETOnlyZPrime_*_*',
+    'keep *_htProducer_*_*',
+    'keep *_DMGenParticles_*_*'
     ])
 
 # Path and EndPath definitions
 process.jet_step = cms.Path(
-    process.saveGenParticlesForJetsNoNu
+    process.saveGenParticlesForJetsNoNu + process.saveGenParticlesForJetsNoNuOnlyZPrime
     +
-    process.saveGenParticlesForJetsNoNuOnlyZPrime
+    process.saveGenParticlesForMETAllVisible + process.saveGenParticlesForMETAllVisibleOnlyZPrime
+    +
+    process.saveGenCandidatesForMET + process.saveGenCandidatesForMETOnlyZPrime
     +
     process.genJetsNoNuArea
     +
     process.genJetsNoNuSoftDrop
     +
     process.htProducer
+    +
+    process.DMGenParticles
     +
     process.substructurePacks
     )
