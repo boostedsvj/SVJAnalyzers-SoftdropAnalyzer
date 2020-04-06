@@ -17,7 +17,7 @@ The package was tested for `CMSSW_9_3_15` (2017) and `CMSSW_10_2_18` (2018), but
 ## Running
 
 
-# Softdrop analyzer
+### Softdrop analyzer
 
 From `CMSSW_X_Y_Z/src/SVJAnalyzers/SoftdropAnalyzer`, do:
 
@@ -25,7 +25,7 @@ From `CMSSW_X_Y_Z/src/SVJAnalyzers/SoftdropAnalyzer`, do:
 cmsRun python/AnalyzeSoftdrop.py inputFiles=file:/path/to/input/genfile.root
 ```
 
-# Saving detailed information about the Z'
+### Saving detailed information about the Z'
 
 From `CMSSW_X_Y_Z/src/SVJAnalyzers/SoftdropAnalyzer`, do:
 
