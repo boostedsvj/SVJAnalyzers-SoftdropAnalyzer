@@ -4,7 +4,7 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing("analysis")
 options.inputFiles = 'file:susyv1_mmed450_rinv03_0.root'
 options.outputFile = 'particlehierarchy.root'
-options.maxEvents = 300
+options.maxEvents = -1
 options.parseArguments()
 
 from Configuration.StandardSequences.Eras import eras
