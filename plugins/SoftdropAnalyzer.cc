@@ -44,6 +44,7 @@ using std::vector;
 struct Jet {
     vector<TLorentzVector> p4_;
 
+    void fill(TLorentzVector jet){ p4_.push_back(jet); }
     void fill(edm::Ptr<const reco::Jet> jet){
         fill( &(*jet) );
         }
@@ -58,6 +59,28 @@ struct Jet {
 
     int size(){
         return p4_.size();
+        }
+    };
+
+struct Subjets{
+    /* Much like Jet, but stores a vector<vector<TLorentzVector>> */
+    vector<vector<TLorentzVector>> p4_;
+
+    void new_group(){
+        vector<TLorentzVector> newVector;
+        p4_.push_back(newVector);
+        }
+
+    void fill(edm::Ptr<const reco::Candidate> jet){
+        fill(&(*jet));
+        }
+
+    void fill(const reco::Candidate * jet){
+        p4_.back().push_back( TLorentzVector(jet->px(),jet->py(),jet->pz(),jet->energy()) );
+        }
+
+    void linkToTree(TTree* tree, std::string name){
+        tree->Branch(name.c_str(), "vector<vector<TLorentzVector>>", &p4_, 32000, 0);
         }
     };
 
@@ -224,23 +247,22 @@ struct GenParticle {
 // Event format
 
 struct Entry {
-    /*
-    Main entry of the flat ntuple
-    */
-
+    /* Main entry of the flat ntuple */
     int event_number;
 
     int n_all_ak15jet;
-    // shape: n_all_ak15jet    
+    // shape: n_all_ak15jet
     JetWithSubstructure_MTwMET all_ak15jet;
     Jet all_softdropjet;
-    // GroupedJets all_subjets
+    Jet all_summedsubjets;
+    Subjets all_subjets;
     vector<bool> is_matched;
 
     // shape: n_matched_ak15jet
     JetWithSubstructure_MTwMET matched_ak15jet;
     Jet matched_softdropjet;
-    // GroupedJets matched_subjets
+    Jet matched_summedsubjets;
+    Subjets matched_subjets;
     GenParticle zprime;
     GenParticle initial_dark_quarks;
     GenParticle final_dark_quarks;
@@ -259,10 +281,14 @@ struct Entry {
         tree->Branch("n_all_ak15jet", &n_all_ak15jet);
         all_ak15jet.linkToTree(tree, "all_ak15jet");
         all_softdropjet.linkToTree(tree, "all_softdropjet");
+        all_subjets.linkToTree(tree, "all_subjets");
+        all_summedsubjets.linkToTree(tree, "all_summedsubjets");
         tree->Branch("is_matched", "vector<bool>", &is_matched, 32000, 0);
 
         matched_ak15jet.linkToTree(tree, "matched_ak15jet");
         matched_softdropjet.linkToTree(tree, "matched_softdropjet");
+        matched_summedsubjets.linkToTree(tree, "matched_summedsubjets");
+        matched_subjets.linkToTree(tree, "matched_subjets");
         zprime.linkToTree(tree, "zprime");
         initial_dark_quarks.linkToTree(tree, "initial_dark_quarks");
         final_dark_quarks.linkToTree(tree, "final_dark_quarks");
@@ -355,11 +381,21 @@ void SoftdropAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     for(const auto& substructurePack : *(h_subsstructurepacks.product())){
         entry.all_ak15jet.fill(substructurePack.jet(), entry.met);
         entry.all_softdropjet.fill(substructurePack.substructurejet());
+        entry.all_summedsubjets.fill(substructurePack.summedsubjets());
+        entry.all_subjets.new_group();
+        for ( auto const & subjet : substructurePack.subjets()) {
+            entry.all_subjets.fill(subjet);
+            }
         entry.is_matched.push_back(substructurePack.hasZprime());
         // Fill matched jets again in a dedicated variable
         if (substructurePack.hasZprime()) {
             entry.matched_ak15jet.fill(substructurePack.jet(), entry.met);
             entry.matched_softdropjet.fill(substructurePack.substructurejet());
+            entry.matched_summedsubjets.fill(substructurePack.summedsubjets());
+            entry.matched_subjets.new_group();
+            for ( auto const & subjet : substructurePack.subjets()) {
+                entry.matched_subjets.fill(subjet);
+                }
             // Get the zprime, fill it, look for all its decay products, and fill those too
             const reco::GenParticle * zprime = substructurePack.zprime();
             entry.zprime.fill(zprime);
