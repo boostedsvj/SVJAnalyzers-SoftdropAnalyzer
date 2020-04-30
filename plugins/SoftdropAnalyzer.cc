@@ -66,9 +66,15 @@ struct Subjets{
     /* Much like Jet, but stores an indices vector alongside of it so that subjets per ak15 jet can be retraced */
     vector<TLorentzVector> p4_;
     vector<unsigned int> groupNumber_;
+    vector<unsigned int> groupCount_;
     unsigned int currentGroupNumber_ = 0;
+    unsigned int currentGroupCount_ = 0;
 
-    void newGroup(){ currentGroupNumber_++; }
+    void newGroup(){
+        groupCount_.push_back(currentGroupCount_);
+        currentGroupNumber_++;
+        currentGroupCount_ = 0;
+        }
 
     void fill(edm::Ptr<const reco::Candidate> jet){
         fill(&(*jet));
@@ -77,11 +83,13 @@ struct Subjets{
     void fill(const reco::Candidate * jet){
         p4_.push_back( TLorentzVector(jet->px(),jet->py(),jet->pz(),jet->energy()) );
         groupNumber_.push_back(currentGroupNumber_);
+        currentGroupCount_++;
         }
 
     void linkToTree(TTree* tree, std::string name){
         tree->Branch(name.c_str(), "vector<TLorentzVector>", &p4_, 32000, 0);
         tree->Branch((name + "_index").c_str(), "vector<unsigned int>", &groupNumber_, 32000, 0);
+        tree->Branch((name + "_count").c_str(), "vector<unsigned int>", &groupCount_, 32000, 0);
         }
     };
 
