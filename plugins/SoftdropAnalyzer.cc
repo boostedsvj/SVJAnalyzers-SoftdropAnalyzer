@@ -63,24 +63,25 @@ struct Jet {
     };
 
 struct Subjets{
-    /* Much like Jet, but stores a vector<vector<TLorentzVector>> */
-    vector<vector<TLorentzVector>> p4_;
+    /* Much like Jet, but stores an indices vector alongside of it so that subjets per ak15 jet can be retraced */
+    vector<TLorentzVector> p4_;
+    vector<unsigned int> groupNumber_;
+    unsigned int currentGroupNumber_ = 0;
 
-    void new_group(){
-        vector<TLorentzVector> newVector;
-        p4_.push_back(newVector);
-        }
+    void newGroup(){ currentGroupNumber_++; }
 
     void fill(edm::Ptr<const reco::Candidate> jet){
         fill(&(*jet));
         }
 
     void fill(const reco::Candidate * jet){
-        p4_.back().push_back( TLorentzVector(jet->px(),jet->py(),jet->pz(),jet->energy()) );
+        p4_.push_back( TLorentzVector(jet->px(),jet->py(),jet->pz(),jet->energy()) );
+        groupNumber_.push_back(currentGroupNumber_);
         }
 
     void linkToTree(TTree* tree, std::string name){
-        tree->Branch(name.c_str(), "vector<vector<TLorentzVector>>", &p4_, 32000, 0);
+        tree->Branch(name.c_str(), "vector<TLorentzVector>", &p4_, 32000, 0);
+        tree->Branch((name + "_index").c_str(), "vector<unsigned int>", &groupNumber_, 32000, 0);
         }
     };
 
@@ -382,20 +383,20 @@ void SoftdropAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& 
         entry.all_ak15jet.fill(substructurePack.jet(), entry.met);
         entry.all_softdropjet.fill(substructurePack.substructurejet());
         entry.all_summedsubjets.fill(substructurePack.summedsubjets());
-        entry.all_subjets.new_group();
         for ( auto const & subjet : substructurePack.subjets()) {
             entry.all_subjets.fill(subjet);
             }
+        entry.all_subjets.newGroup();
         entry.is_matched.push_back(substructurePack.hasZprime());
         // Fill matched jets again in a dedicated variable
         if (substructurePack.hasZprime()) {
             entry.matched_ak15jet.fill(substructurePack.jet(), entry.met);
             entry.matched_softdropjet.fill(substructurePack.substructurejet());
             entry.matched_summedsubjets.fill(substructurePack.summedsubjets());
-            entry.matched_subjets.new_group();
             for ( auto const & subjet : substructurePack.subjets()) {
                 entry.matched_subjets.fill(subjet);
                 }
+            entry.matched_subjets.newGroup();
             // Get the zprime, fill it, look for all its decay products, and fill those too
             const reco::GenParticle * zprime = substructurePack.zprime();
             entry.zprime.fill(zprime);
