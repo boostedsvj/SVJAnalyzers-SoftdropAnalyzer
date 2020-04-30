@@ -96,10 +96,10 @@ process.substructurePacks = cms.EDProducer(
 
 process.SoftdropAnalyzer = cms.EDAnalyzer(
     "SoftdropAnalyzer",
+    # "MinimalSDAnalyzer",
     HTTag = cms.InputTag('htProducer', 'genHT'),
     JetTag = cms.InputTag('genJetsNoNu'),
     SubstructurePackTag = cms.InputTag("substructurePacks"),
-    distMax = cms.double(0.8),
     )
 
 # Path and EndPath definitions
